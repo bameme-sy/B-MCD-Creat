@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCD Creator - Editeur</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <aside id="sidebar">
+      <div class="sidebar-title">MCD Creator</div>
+
+      <div class="sidebar-section">
+        <div class="section-title">Elements</div>
+        <button id="btn-add-entity" class="btn btn-primary">+ Entite</button>
+        <button id="btn-add-association" class="btn btn-primary">◇ Association</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">Outils</div>
+        <button class="btn tool-btn active" data-tool="select">↖ Selection</button>
+        <button class="btn tool-btn" data-tool="connect">⇒ Connecter</button>
+        <button class="btn tool-btn btn-danger" data-tool="delete">✕ Supprimer</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">Export</div>
+        <button id="btn-export-svg" class="btn">⬇ Exporter SVG</button>
+        <button id="btn-export-png" class="btn">⬇ Exporter PNG</button>
+        <button id="btn-export-sql" class="btn">⬇ Exporter SQL</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">Projet</div>
+        <button id="btn-save-json" class="btn">💾 Sauvegarder</button>
+        <button id="btn-load-json" class="btn">📂 Charger</button>
+        <input type="file" id="file-input" accept=".json" style="display:none">
+        <button id="btn-clear" class="btn btn-danger">🗑 Effacer tout</button>
+      </div>
+
+      <div id="tool-hint-box">
+        <span id="tool-hint">Cliquez pour selectionner, glissez pour deplacer.</span>
+      </div>
+    </aside>
+
+    <div id="canvas-container">
+      <svg id="canvas" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#dde3f0" stroke-width="0.5"/>
+          </pattern>
+          <style>
+            .entity-header    { fill: #4962d0; }
+            .entity-body      { fill: #ffffff; stroke: #4962d0; stroke-width: 2; }
+            .entity-name-text { fill: #ffffff; font-weight: bold; font-size: 13px;
+                                font-family: -apple-system, Arial, sans-serif;
+                                text-anchor: middle; dominant-baseline: central;
+                                pointer-events: none; }
+            .entity-attr-text { fill: #333; font-size: 12px;
+                                font-family: -apple-system, Arial, sans-serif;
+                                dominant-baseline: central; pointer-events: none; }
+            .entity-pk-text   { fill: #4962d0; font-size: 12px; font-weight: bold;
+                                font-family: -apple-system, Arial, sans-serif;
+                                dominant-baseline: central; pointer-events: none; }
+            .entity-divider   { stroke: #c5ccf0; stroke-width: 1; }
+            .assoc-diamond    { fill: #27ae60; }
+            .assoc-text       { fill: #ffffff; font-weight: bold; font-size: 11px;
+                                font-family: -apple-system, Arial, sans-serif;
+                                text-anchor: middle; dominant-baseline: central;
+                                pointer-events: none; }
+            .conn-line        { stroke: #555; stroke-width: 1.5; }
+            .card-text        { fill: #c0392b; font-size: 11px; font-weight: bold;
+                                font-family: -apple-system, Arial, sans-serif;
+                                text-anchor: middle; pointer-events: none; }
+            .entity-group.selected .entity-body   { stroke: #f39c12; stroke-width: 2.5; }
+            .entity-group.selected .entity-header { fill: #e67e22; }
+            .assoc-group.selected .assoc-diamond  { fill: #e67e22; }
+            .entity-group.highlight .entity-header { fill: #8e44ad; }
+            .assoc-group.highlight .assoc-diamond  { fill: #8e44ad; }
+          </style>
+        </defs>
+        <rect id="canvas-bg" width="100%" height="100%" fill="url(#grid)"/>
+        <g id="connections-layer"></g>
+        <g id="elements-layer"></g>
+      </svg>
+    </div>
+
+    <div id="modal-entity" class="modal hidden">
+      <div class="modal-overlay" data-close="modal-entity"></div>
+      <div class="modal-box">
+        <h2>Editer l'entite</h2>
+        <div class="form-group">
+          <label>Nom de l'entite</label>
+          <input type="text" id="entity-name-input" placeholder="Ex : CLIENT">
+        </div>
+        <div class="form-group">
+          <label>Attributs</label>
+          <div id="attributes-list"></div>
+          <button id="btn-add-attr" class="btn btn-sm" style="margin-top:6px">+ Ajouter un attribut</button>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-entity-cancel" class="btn">Annuler</button>
+          <button id="btn-entity-save" class="btn btn-primary">Sauvegarder</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-assoc" class="modal hidden">
+      <div class="modal-overlay" data-close="modal-assoc"></div>
+      <div class="modal-box">
+        <h2>Editer l'association</h2>
+        <div class="form-group">
+          <label>Nom de l'association</label>
+          <input type="text" id="assoc-name-input" placeholder="Ex : PASSE">
+        </div>
+        <div id="assoc-connections-list"></div>
+        <div class="modal-footer">
+          <button id="btn-assoc-cancel" class="btn">Annuler</button>
+          <button id="btn-assoc-save" class="btn btn-primary">Sauvegarder</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-cardinality" class="modal hidden">
+      <div class="modal-overlay" data-close="modal-cardinality"></div>
+      <div class="modal-box small">
+        <h2>Cardinalite</h2>
+        <div class="form-group">
+          <label>Choisir la cardinalite</label>
+          <select id="cardinality-select">
+            <option value="0,1">0,1</option>
+            <option value="1,1" selected>1,1</option>
+            <option value="0,N">0,N</option>
+            <option value="1,N">1,N</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-card-cancel" class="btn">Annuler</button>
+          <button id="btn-card-ok" class="btn btn-primary">Confirmer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-sql" class="modal hidden">
+      <div class="modal-overlay" data-close="modal-sql"></div>
+      <div class="modal-box large">
+        <h2>Export SQL</h2>
+        <textarea id="sql-output" readonly></textarea>
+        <div class="modal-footer">
+          <button id="btn-sql-close" class="btn">Fermer</button>
+          <button id="btn-sql-download" class="btn">⬇ Telecharger</button>
+          <button id="btn-sql-copy" class="btn btn-primary">📋 Copier</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

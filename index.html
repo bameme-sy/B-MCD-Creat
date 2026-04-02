@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCD Creator - Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="landing.css">
+</head>
+<body>
+  <div class="bg-shape shape-a"></div>
+  <div class="bg-shape shape-b"></div>
+
+  <header class="topbar">
+    <div class="brand">MCD Creator</div>
+    <a class="btn btn-outline" href="editor.html">Ouvrir l'editeur</a>
+  </header>
+
+  <main class="hero">
+    <section class="hero-content">
+      <p class="eyebrow">Conception de bases de donnees</p>
+      <h1>Construis tes modeles MCD en mode visuel.</h1>
+      <p class="lead">
+        Cree des entites, relie des associations, ajuste les cardinalites puis exporte en SVG, PNG, SQL ou JSON.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="editor.html">Commencer maintenant</a>
+        <a class="btn btn-ghost" href="#features">Voir les fonctionnalites</a>
+      </div>
+    </section>
+
+    <section class="mockup" aria-label="Apercu du projet">
+      <div class="mockup-header">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-card">
+          <h3>CLIENT</h3>
+          <p># id : INT</p>
+          <p>- nom : VARCHAR(100)</p>
+        </div>
+        <div class="mock-diamond">PASSE</div>
+        <div class="mock-card">
+          <h3>COMMANDE</h3>
+          <p># id : INT</p>
+          <p>- date : DATE</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section id="features" class="features">
+    <article>
+      <h2>Edition intuitive</h2>
+      <p>Glisser-deposer, double-clic pour modifier et mode connexion avec cardinalites.</p>
+    </article>
+    <article>
+      <h2>Exports complets</h2>
+      <p>Recupere ton schema en SVG, PNG, SQL ou JSON pour continuer ton projet.</p>
+    </article>
+    <article>
+      <h2>100% navigateur</h2>
+      <p>Aucune dependance lourde: un simple serveur statique suffit pour l'utiliser.</p>
+    </article>
+  </section>
+</body>
+</html>

@@ -4,13 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MCD Creator - Editeur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="bg-shape shape-a"></div>
+  <div class="bg-shape shape-b"></div>
+
   <div id="app">
+    <button id="mobile-sidebar-toggle" type="button" aria-label="Ouvrir les outils">☰ Outils</button>
+    <div id="sidebar-backdrop" class="hidden" aria-hidden="true"></div>
 
     <aside id="sidebar">
-      <div class="sidebar-title">MCD Creator</div>
+      <div class="sidebar-head">
+        <div class="sidebar-title"><a href="index.html">MCD Creator</a></div>
+        <button id="sidebar-close" type="button" aria-label="Fermer les outils">✕</button>
+      </div>
 
       <div class="sidebar-section">
         <div class="section-title">Elements</div>
@@ -30,6 +41,7 @@
         <button id="btn-export-svg" class="btn">⬇ Exporter SVG</button>
         <button id="btn-export-png" class="btn">⬇ Exporter PNG</button>
         <button id="btn-export-sql" class="btn">⬇ Exporter SQL</button>
+        <button id="btn-import-sql" class="btn">⬆ Importer SQL</button>
       </div>
 
       <div class="sidebar-section">
@@ -82,9 +94,18 @@
           </style>
         </defs>
         <rect id="canvas-bg" width="100%" height="100%" fill="url(#grid)"/>
-        <g id="connections-layer"></g>
-        <g id="elements-layer"></g>
+        <g id="viewport">
+          <g id="connections-layer"></g>
+          <g id="elements-layer"></g>
+        </g>
       </svg>
+
+      <div id="zoom-controls">
+        <button id="btn-zoom-in"  class="zoom-btn" title="Zoom +">+</button>
+        <span   id="zoom-label"  class="zoom-label">100%</span>
+        <button id="btn-zoom-out" class="zoom-btn" title="Zoom -">−</button>
+        <button id="btn-zoom-fit" class="zoom-btn zoom-fit" title="Adapter au contenu">⛶</button>
+      </div>
     </div>
 
     <div id="modal-entity" class="modal hidden">
@@ -152,6 +173,25 @@
           <button id="btn-sql-close" class="btn">Fermer</button>
           <button id="btn-sql-download" class="btn">⬇ Telecharger</button>
           <button id="btn-sql-copy" class="btn btn-primary">📋 Copier</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-import-sql" class="modal hidden">
+      <div class="modal-overlay" data-close="modal-import-sql"></div>
+      <div class="modal-box large">
+        <h2>Importer depuis un script SQL</h2>
+        <p class="import-sql-hint">Collez un script SQL contenant des <code>CREATE TABLE</code>.<br>Les clés étrangères (<code>FOREIGN KEY … REFERENCES</code>) seront converties en associations.</p>
+        <div class="form-group" style="margin-top:14px">
+          <label>Script SQL</label>
+          <textarea id="sql-import-input" placeholder="-- Collez votre script SQL ici..."></textarea>
+        </div>
+        <div id="sql-import-error" class="sql-import-error hidden"></div>
+        <div class="modal-footer">
+          <button id="btn-import-sql-cancel" class="btn">Annuler</button>
+          <button id="btn-import-sql-file" class="btn">📂 Depuis un fichier</button>
+          <input type="file" id="sql-file-input" accept=".sql,.txt" style="display:none">
+          <button id="btn-import-sql-go" class="btn btn-primary">⬆ Générer le MCD</button>
         </div>
       </div>
     </div>

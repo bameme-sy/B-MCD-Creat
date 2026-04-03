@@ -42,7 +42,75 @@ const state = {
 const svg        = document.getElementById('canvas');
 const layerConn  = document.getElementById('connections-layer');
 const layerElems = document.getElementById('elements-layer');
+const viewport   = document.getElementById('viewport');
+const appRoot    = document.getElementById('app');
+const mobileSidebarToggle = document.getElementById('mobile-sidebar-toggle');
+const sidebarBackdrop     = document.getElementById('sidebar-backdrop');
+const sidebarCloseBtn     = document.getElementById('sidebar-close');
 
+const mobileBreakpoint = window.matchMedia('(max-width: 980px)');
+
+function isMobileViewport() {
+  return mobileBreakpoint.matches;
+}
+
+function setSidebarOpen(isOpen) {
+  appRoot.classList.toggle('sidebar-open', isOpen);
+  document.body.classList.toggle('sidebar-open', isOpen);
+  sidebarBackdrop.classList.toggle('hidden', !isOpen);
+}
+
+function closeSidebarIfMobile() {
+  if (isMobileViewport()) setSidebarOpen(false);
+}
+
+mobileSidebarToggle?.addEventListener('click', () => {
+  setSidebarOpen(!appRoot.classList.contains('sidebar-open'));
+});
+
+sidebarCloseBtn?.addEventListener('click', () => {
+  setSidebarOpen(false);
+});
+
+sidebarBackdrop?.addEventListener('click', () => {
+  setSidebarOpen(false);
+});
+
+mobileBreakpoint.addEventListener('change', event => {
+  if (!event.matches) setSidebarOpen(false);
+});
+
+document.querySelectorAll('#sidebar .btn, #sidebar a').forEach(element => {
+  element.addEventListener('click', () => {
+    if (element.id !== 'sidebar-close') closeSidebarIfMobile();
+  });
+});
+
+// ── Zoom / Pan state ─────────────────────────────────────────
+const camera = {
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  MIN_ZOOM: 0.15,
+  MAX_ZOOM: 4,
+};
+
+function applyCamera() {
+  viewport.setAttribute('transform',
+    `translate(${camera.panX},${camera.panY}) scale(${camera.zoom})`);
+  const pct = Math.round(camera.zoom * 100);
+  document.getElementById('zoom-label').textContent = pct + '%';
+}
+
+function zoomAround(newZoom, pivotX, pivotY) {
+  // pivotX/Y are in SVG client coordinates (before zoom)
+  newZoom = Math.min(camera.MAX_ZOOM, Math.max(camera.MIN_ZOOM, newZoom));
+  const scale = newZoom / camera.zoom;
+  camera.panX = pivotX + (camera.panX - pivotX) * scale;
+  camera.panY = pivotY + (camera.panY - pivotY) * scale;
+  camera.zoom = newZoom;
+  applyCamera();
+}
 // ── Utilities ────────────────────────────────────────────────
 function uid() { return state.nextId++; }
 
@@ -85,6 +153,15 @@ function escHtml(s) {
 }
 
 function svgPt(e) {
+  const r = svg.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left - camera.panX) / camera.zoom,
+    y: (e.clientY - r.top  - camera.panY) / camera.zoom,
+  };
+}
+
+// Raw SVG-client coordinates (ignores zoom/pan) — used for zoomAround pivot
+function svgRawPt(e) {
   const r = svg.getBoundingClientRect();
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
@@ -280,12 +357,26 @@ function renderConnections() {
   });
 }
 
-// ── Drag & Drop ──────────────────────────────────────────────
-let drag = null; // { type, id, ox, oy, sx, sy }
+// ── Drag & Drop + Pan ────────────────────────────────────────
+let drag    = null; // { type, id, ox, oy, sx, sy }  — element drag
+let panning = null; // { startX, startY, startPanX, startPanY } — canvas pan
 
 svg.addEventListener('mousedown', e => {
   const tgt = e.target.closest('[data-type="entity"],[data-type="assoc"]');
-  if (!tgt) return;
+
+  // ── Click on background → start panning (select tool only)
+  if (!tgt) {
+    if (state.tool === 'select') {
+      e.preventDefault();
+      panning = {
+        startX:    e.clientX,
+        startY:    e.clientY,
+        startPanX: camera.panX,
+        startPanY: camera.panY,
+      };
+    }
+    return;
+  }
 
   const type = tgt.dataset.type;
   const id   = parseInt(tgt.dataset.id);
@@ -300,7 +391,7 @@ svg.addEventListener('mousedown', e => {
     return;
   }
 
-  // select + drag
+  // select + drag element
   e.preventDefault();
   state.selected = { type, id };
   const pt  = svgPt(e);
@@ -310,6 +401,12 @@ svg.addEventListener('mousedown', e => {
 });
 
 svg.addEventListener('mousemove', e => {
+  if (panning) {
+    camera.panX = panning.startPanX + (e.clientX - panning.startX);
+    camera.panY = panning.startPanY + (e.clientY - panning.startY);
+    applyCamera();
+    return;
+  }
   if (!drag) return;
   const pt = svgPt(e);
   const dx = pt.x - drag.sx, dy = pt.y - drag.sy;
@@ -320,8 +417,91 @@ svg.addEventListener('mousemove', e => {
   render();
 });
 
-svg.addEventListener('mouseup',    () => { drag = null; });
-svg.addEventListener('mouseleave', () => { drag = null; });
+svg.addEventListener('mouseup',    () => { drag = null; panning = null; });
+svg.addEventListener('mouseleave', () => { drag = null; panning = null; });
+
+// ── Zoom : molette ───────────────────────────────────────────
+svg.addEventListener('wheel', e => {
+  e.preventDefault();
+  const pivot = svgRawPt(e);
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  zoomAround(camera.zoom * factor, pivot.x, pivot.y);
+}, { passive: false });
+
+// ── Zoom : pinch tactile ──────────────────────────────────────
+let lastPinchDist = null;
+svg.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) lastPinchDist = Math.hypot(
+    e.touches[0].clientX - e.touches[1].clientX,
+    e.touches[0].clientY - e.touches[1].clientY
+  );
+}, { passive: true });
+svg.addEventListener('touchmove', e => {
+  if (e.touches.length !== 2 || lastPinchDist === null) return;
+  const dist = Math.hypot(
+    e.touches[0].clientX - e.touches[1].clientX,
+    e.touches[0].clientY - e.touches[1].clientY
+  );
+  const r   = svg.getBoundingClientRect();
+  const mx  = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
+  const my  = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
+  zoomAround(camera.zoom * (dist / lastPinchDist), mx, my);
+  lastPinchDist = dist;
+}, { passive: true });
+svg.addEventListener('touchend', () => { lastPinchDist = null; }, { passive: true });
+
+// ── Zoom : boutons de contrôle ────────────────────────────────
+document.getElementById('btn-zoom-in').addEventListener('click', () => {
+  const r = svg.getBoundingClientRect();
+  zoomAround(camera.zoom * 1.25, r.width / 2, r.height / 2);
+});
+document.getElementById('btn-zoom-out').addEventListener('click', () => {
+  const r = svg.getBoundingClientRect();
+  zoomAround(camera.zoom / 1.25, r.width / 2, r.height / 2);
+});
+document.getElementById('btn-zoom-fit').addEventListener('click', fitToContent);
+
+/**
+ * Centre et adapte le zoom pour que tous les éléments soient visibles.
+ * Si le canvas est vide, réinitialise la caméra.
+ */
+function fitToContent() {
+  const all = [...state.entities, ...state.associations];
+  if (all.length === 0) {
+    camera.zoom = 1; camera.panX = 0; camera.panY = 0;
+    applyCamera(); return;
+  }
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  state.entities.forEach(ent => {
+    minX = Math.min(minX, ent.x);
+    minY = Math.min(minY, ent.y);
+    maxX = Math.max(maxX, ent.x + ENT_W);
+    maxY = Math.max(maxY, ent.y + entHeight(ent));
+  });
+  state.associations.forEach(asc => {
+    minX = Math.min(minX, asc.x - ASC_R);
+    minY = Math.min(minY, asc.y - ASC_R);
+    maxX = Math.max(maxX, asc.x + ASC_R);
+    maxY = Math.max(maxY, asc.y + ASC_R);
+  });
+
+  const r       = svg.getBoundingClientRect();
+  const pad     = 60;
+  const contentW = maxX - minX + pad * 2;
+  const contentH = maxY - minY + pad * 2;
+  const newZoom  = Math.min(
+    camera.MAX_ZOOM,
+    Math.max(camera.MIN_ZOOM, Math.min(r.width / contentW, r.height / contentH))
+  );
+  camera.zoom = newZoom;
+  camera.panX = (r.width  - contentW * newZoom) / 2 - (minX - pad) * newZoom;
+  camera.panY = (r.height - contentH * newZoom) / 2 - (minY - pad) * newZoom;
+  applyCamera();
+}
+
+// ── Zoom : raccourcis clavier ─────────────────────────────────
+// (géré dans le bloc keydown ci-dessous)
 
 svg.addEventListener('dblclick', e => {
   const tgt = e.target.closest('[data-type="entity"],[data-type="assoc"]');
@@ -350,6 +530,9 @@ document.addEventListener('keydown', e => {
   // Don't intercept shortcuts when typing in inputs/textareas
   if (document.activeElement.matches('input,textarea,select')) return;
 
+  const r = svg.getBoundingClientRect();
+  const cx = r.width / 2, cy = r.height / 2;
+
   if (e.key === 'Escape') {
     cancelConnect();
     state.selected = null;
@@ -359,6 +542,14 @@ document.addEventListener('keydown', e => {
       doDelete(state.selected.type, state.selected.id);
       state.selected = null;
     }
+  } else if (e.key === '=' || e.key === '+') {
+    zoomAround(camera.zoom * 1.25, cx, cy);
+  } else if (e.key === '-') {
+    zoomAround(camera.zoom / 1.25, cx, cy);
+  } else if (e.key === '0') {
+    camera.zoom = 1; camera.panX = 0; camera.panY = 0; applyCamera();
+  } else if (e.key === 'f' || e.key === 'F') {
+    fitToContent();
   }
 });
 
@@ -656,42 +847,165 @@ document.getElementById('btn-sql-close').addEventListener('click', () => {
   document.getElementById('modal-sql').classList.add('hidden');
 });
 
-function generateSQL() {
-  let sql = '-- SQL généré par MCD Creator\n-- ' + new Date().toLocaleString('fr-FR') + '\n\n';
+// ── SQL Generation ────────────────────────────────────────────
 
+/**
+ * Convertit un nom arbitraire en identifiant SQL snake_case valide.
+ * Ex : "Mon Entité 2" → "mon_entite_2"
+ */
+function toSqlName(str) {
+  return str
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // retire les accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')                        // remplace tout caractère non-alphanum par _
+    .replace(/^_+|_+$/g, '');                           // supprime les _ de début/fin
+}
+
+/**
+ * Retourne la clé primaire (premier attribut isPK) d'une entité,
+ * ou une valeur par défaut {name:'id', type:'INT'}.
+ */
+function getPK(ent) {
+  return ent.attributes.find(a => a.isPK) ?? { name: 'id', type: 'INT' };
+}
+
+/**
+ * Analyse les connexions d'une association et retourne son « type ».
+ *
+ * Chaque connexion a une cardinality du côté entité :
+ *   - max = 1  si cardinalité '0,1' ou '1,1'
+ *   - max = N  si cardinalité '0,N' ou '1,N'
+ *
+ * Règle MCD → MLD :
+ *   - Si TOUTES les cardinalités max sont 1 (rare, erreur de modèle) → on traite comme binaire
+ *   - Si UNE SEULE cardinalité max est N → la FK va dans la table côté max=1
+ *   - Si PLUSIEURS cardinalités max sont N → table de jonction
+ */
+function analyzeAssoc(assocId) {
+  const conns = state.connections.filter(c => c.assocId === assocId);
+  if (conns.length < 2) return { type: 'skip', conns };
+
+  const maxN = conns.filter(c => c.cardinality === '0,N' || c.cardinality === '1,N');
+  const max1 = conns.filter(c => c.cardinality === '0,1' || c.cardinality === '1,1');
+
+  if (maxN.length >= 2) return { type: 'junction', conns, maxN, max1 };
+  if (maxN.length === 1) return { type: 'fk',       conns, maxN, max1 };
+  return { type: 'fk', conns, maxN: [], max1: conns }; // tous max=1 → FK dans la première table
+}
+
+/**
+ * Génère le script SQL complet depuis l'état courant du MCD.
+ */
+function generateSQL() {
+  const lines = [];
+
+  lines.push('-- ============================================================');
+  lines.push('-- Script SQL généré par MCD Creator');
+  lines.push('-- ' + new Date().toLocaleString('fr-FR'));
+  lines.push('-- ============================================================');
+  lines.push('');
+
+  // ── 1. Tables des entités ──────────────────────────────────
+  // Collecte des FK à injecter par entité (pour les relations type 'fk')
+  // Map<entId, [{colName, colType, refTable, refCol, nullable}]>
+  const fkByEntity = new Map();
+  state.entities.forEach(e => fkByEntity.set(e.id, []));
+
+  // Analyse toutes les associations pour pré-calculer les FK
+  state.associations.forEach(asc => {
+    const analysis = analyzeAssoc(asc.id);
+    if (analysis.type !== 'fk') return;
+
+    const { conns, maxN, max1 } = analysis;
+
+    // La FK est portée par l'entité côté max=1 (ou la première si aucun max=N)
+    const fkConns  = max1.length > 0 ? max1 : [conns[0]];
+    const refConns = conns.filter(c => !fkConns.includes(c));
+
+    fkConns.forEach(fc => {
+      const fkEnt = getEntity(fc.entityId);
+      if (!fkEnt) return;
+      refConns.forEach(rc => {
+        const refEnt = getEntity(rc.entityId);
+        if (!refEnt) return;
+        const pk = getPK(refEnt);
+        fkByEntity.get(fkEnt.id)?.push({
+          colName:  toSqlName(refEnt.name) + '_' + toSqlName(pk.name),
+          colType:  pk.type,
+          refTable: toSqlName(refEnt.name),
+          refCol:   toSqlName(pk.name),
+          nullable: fc.cardinality === '0,1',
+          assocName: asc.name,
+        });
+      });
+    });
+  });
+
+  // Génère les CREATE TABLE des entités
   state.entities.forEach(ent => {
-    const tbl = ent.name.toLowerCase().replace(/\s+/g, '_');
+    const tbl  = toSqlName(ent.name);
     const cols = [];
     const pks  = [];
+    const fks  = [];
 
+    // Colonnes propres
     ent.attributes.forEach(attr => {
-      const col = attr.name.toLowerCase().replace(/\s+/g, '_');
-      cols.push(`  ${col} ${attr.type}${attr.isPK ? ' NOT NULL' : ''}`);
+      const col      = toSqlName(attr.name);
+      const notNull  = attr.isPK ? ' NOT NULL' : '';
+      cols.push(`  ${col} ${attr.type}${notNull}`);
       if (attr.isPK) pks.push(col);
     });
 
-    // FK columns for 1,1 / 0,1 cardinalities on this entity's side
-    state.connections
-      .filter(c => c.entityId === ent.id && (c.cardinality === '1,1' || c.cardinality === '0,1'))
-      .forEach(conn => {
-        const otherConns = state.connections.filter(
-          c => c.assocId === conn.assocId && c.entityId !== ent.id
-        );
-        otherConns.forEach(oc => {
-          const other   = getEntity(oc.entityId);
-          if (!other) return;
-          const fkName  = other.name.toLowerCase() + '_id';
-          const otherPK = other.attributes.find(a => a.isPK);
-          cols.push(`  ${fkName} ${otherPK ? otherPK.type : 'INT'}`);
-        });
-      });
+    // Colonnes FK injectées
+    (fkByEntity.get(ent.id) ?? []).forEach(fk => {
+      const nullStr = fk.nullable ? '' : ' NOT NULL';
+      cols.push(`  ${fk.colName} ${fk.colType}${nullStr}`);
+      fks.push(`  CONSTRAINT fk_${tbl}_${fk.refTable}\n    FOREIGN KEY (${fk.colName})\n    REFERENCES ${fk.refTable} (${fk.refCol})\n    ON DELETE ${fk.nullable ? 'SET NULL' : 'CASCADE'}`);
+    });
 
     if (pks.length) cols.push(`  PRIMARY KEY (${pks.join(', ')})`);
+    fks.forEach(f => cols.push(f));
 
-    sql += `CREATE TABLE ${tbl} (\n${cols.join(',\n')}\n);\n\n`;
+    lines.push(`-- Entité : ${ent.name}`);
+    lines.push(`CREATE TABLE IF NOT EXISTS ${tbl} (`);
+    lines.push(cols.join(',\n'));
+    lines.push(');');
+    lines.push('');
   });
 
-  return sql;
+  // ── 2. Tables de jonction (N,N) ───────────────────────────
+  state.associations.forEach(asc => {
+    const analysis = analyzeAssoc(asc.id);
+    if (analysis.type !== 'junction') return;
+
+    const { conns } = analysis;
+    const junctionName = toSqlName(asc.name);
+    const cols = [];
+    const pkCols = [];
+    const fks  = [];
+
+    conns.forEach(conn => {
+      const ent = getEntity(conn.entityId);
+      if (!ent) return;
+      const pk      = getPK(ent);
+      const colName = toSqlName(ent.name) + '_' + toSqlName(pk.name);
+      const notNull = conn.cardinality === '1,N' ? ' NOT NULL' : '';
+      cols.push(`  ${colName} ${pk.type}${notNull}`);
+      pkCols.push(colName);
+      fks.push(`  CONSTRAINT fk_${junctionName}_${toSqlName(ent.name)}\n    FOREIGN KEY (${colName})\n    REFERENCES ${toSqlName(ent.name)} (${toSqlName(pk.name)})\n    ON DELETE CASCADE`);
+    });
+
+    cols.push(`  PRIMARY KEY (${pkCols.join(', ')})`);
+    fks.forEach(f => cols.push(f));
+
+    lines.push(`-- Association N,N : ${asc.name}`);
+    lines.push(`CREATE TABLE IF NOT EXISTS ${junctionName} (`);
+    lines.push(cols.join(',\n'));
+    lines.push(');');
+    lines.push('');
+  });
+
+  return lines.join('\n');
 }
 
 // ── Modal : close on overlay click ───────────────────────────
@@ -809,6 +1123,527 @@ function showToast(msg) {
   toast._t = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
 }
 
+function getCanvasSize() {
+  const rect = svg.getBoundingClientRect();
+  return {
+    width: Math.max(900, rect.width || 900),
+    height: Math.max(600, rect.height || 600),
+  };
+}
+
+function autoLayoutDiagram(entities, associations, connections) {
+  if (!entities.length) return;
+
+  const { width, height } = getCanvasSize();
+  const marginX = 80;
+  const marginY = 70;
+  const columnGap = 210;
+  const rowGap = 54;
+  const assocGap = 110;
+
+  const entityById = new Map(entities.map(entity => [entity.id, entity]));
+  const assocById = new Map(associations.map(association => [association.id, association]));
+
+  const adjacency = new Map(entities.map(entity => [entity.id, new Set()]));
+  connections.forEach(connection => {
+    const assocConnections = connections.filter(item => item.assocId === connection.assocId);
+    assocConnections.forEach(item => {
+      if (item.entityId !== connection.entityId) {
+        adjacency.get(connection.entityId)?.add(item.entityId);
+      }
+    });
+  });
+
+  const degrees = entities
+    .map(entity => ({ id: entity.id, degree: adjacency.get(entity.id)?.size ?? 0 }))
+    .sort((left, right) => right.degree - left.degree || left.id - right.id);
+
+  const levels = new Map();
+  const visited = new Set();
+  const queue = [];
+
+  const pushRoot = rootId => {
+    if (visited.has(rootId)) return;
+    visited.add(rootId);
+    levels.set(rootId, 0);
+    queue.push(rootId);
+    while (queue.length) {
+      const currentId = queue.shift();
+      const currentLevel = levels.get(currentId) ?? 0;
+      const neighbors = [...(adjacency.get(currentId) ?? [])]
+        .sort((left, right) => (adjacency.get(right)?.size ?? 0) - (adjacency.get(left)?.size ?? 0) || left - right);
+      neighbors.forEach(neighborId => {
+        if (visited.has(neighborId)) return;
+        visited.add(neighborId);
+        levels.set(neighborId, currentLevel + 1);
+        queue.push(neighborId);
+      });
+    }
+  };
+
+  degrees.forEach(({ id }) => pushRoot(id));
+
+  const columns = new Map();
+  entities.forEach(entity => {
+    const level = levels.get(entity.id) ?? 0;
+    if (!columns.has(level)) columns.set(level, []);
+    columns.get(level).push(entity);
+  });
+
+  const orderedLevels = [...columns.keys()].sort((left, right) => left - right);
+  orderedLevels.forEach(level => {
+    columns.get(level).sort((left, right) => {
+      const leftScore = [...(adjacency.get(left.id) ?? [])].reduce((sum, id) => sum + (levels.get(id) ?? 0), 0);
+      const rightScore = [...(adjacency.get(right.id) ?? [])].reduce((sum, id) => sum + (levels.get(id) ?? 0), 0);
+      return leftScore - rightScore || left.id - right.id;
+    });
+  });
+
+  const totalWidth = orderedLevels.length
+    ? (orderedLevels.length - 1) * columnGap + ENT_W
+    : ENT_W;
+  const startX = Math.max(marginX, (width - totalWidth) / 2);
+
+  orderedLevels.forEach((level, columnIndex) => {
+    const columnEntities = columns.get(level);
+    const totalHeight = columnEntities.reduce((sum, entity, index) => {
+      return sum + entHeight(entity) + (index > 0 ? rowGap : 0);
+    }, 0);
+    let cursorY = Math.max(marginY, (height - totalHeight) / 2);
+    const x = startX + columnIndex * columnGap;
+    columnEntities.forEach(entity => {
+      entity.x = Math.round(x);
+      entity.y = Math.round(cursorY);
+      cursorY += entHeight(entity) + rowGap;
+    });
+  });
+
+  associations.forEach(association => {
+    const linkedEntities = connections
+      .filter(connection => connection.assocId === association.id)
+      .map(connection => entityById.get(connection.entityId))
+      .filter(Boolean);
+
+    if (!linkedEntities.length) {
+      association.x = Math.round(width / 2);
+      association.y = Math.round(height / 2);
+      return;
+    }
+
+    const avgX = linkedEntities.reduce((sum, entity) => sum + entCenter(entity).x, 0) / linkedEntities.length;
+    const avgY = linkedEntities.reduce((sum, entity) => sum + entCenter(entity).y, 0) / linkedEntities.length;
+
+    let targetX = avgX;
+    let targetY = avgY;
+
+    if (linkedEntities.length === 2) {
+      const [leftEntity, rightEntity] = linkedEntities;
+      const leftCenter = entCenter(leftEntity);
+      const rightCenter = entCenter(rightEntity);
+      targetX = (leftCenter.x + rightCenter.x) / 2;
+      targetY = (leftCenter.y + rightCenter.y) / 2;
+      if (Math.abs(leftCenter.x - rightCenter.x) < 80) {
+        targetX += assocGap;
+      }
+    }
+
+    association.x = Math.round(targetX);
+    association.y = Math.round(targetY);
+  });
+
+  const occupancy = [];
+  associations.forEach(association => {
+    let placed = false;
+    for (let attempt = 0; attempt < 18 && !placed; attempt++) {
+      const collision = occupancy.find(item => Math.hypot(item.x - association.x, item.y - association.y) < ASC_R * 2.4);
+      if (!collision) {
+        occupancy.push({ x: association.x, y: association.y });
+        placed = true;
+        break;
+      }
+      const angle = (attempt / 18) * Math.PI * 2;
+      association.x = Math.round(collision.x + Math.cos(angle) * assocGap);
+      association.y = Math.round(collision.y + Math.sin(angle) * (assocGap * 0.7));
+    }
+    if (!placed) occupancy.push({ x: association.x, y: association.y });
+  });
+
+  const bounds = getDiagramBounds(entities, associations);
+  const shiftX = bounds.minX < marginX ? marginX - bounds.minX : 0;
+  const shiftY = bounds.minY < marginY ? marginY - bounds.minY : 0;
+
+  if (shiftX || shiftY) {
+    entities.forEach(entity => {
+      entity.x += Math.round(shiftX);
+      entity.y += Math.round(shiftY);
+    });
+    associations.forEach(association => {
+      association.x += Math.round(shiftX);
+      association.y += Math.round(shiftY);
+    });
+  }
+
+  const associationIds = new Set(associations.map(association => association.id));
+  connections.forEach(connection => {
+    if (!associationIds.has(connection.assocId)) return;
+    const association = assocById.get(connection.assocId);
+    const entity = entityById.get(connection.entityId);
+    if (!association || !entity) return;
+    const center = entCenter(entity);
+    if (Math.hypot(center.x - association.x, center.y - association.y) < 30) {
+      association.x += assocGap;
+      association.y += Math.round(assocGap * 0.4);
+    }
+  });
+}
+
+function getDiagramBounds(entities, associations) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  entities.forEach(entity => {
+    minX = Math.min(minX, entity.x);
+    minY = Math.min(minY, entity.y);
+    maxX = Math.max(maxX, entity.x + ENT_W);
+    maxY = Math.max(maxY, entity.y + entHeight(entity));
+  });
+
+  associations.forEach(association => {
+    minX = Math.min(minX, association.x - ASC_R);
+    minY = Math.min(minY, association.y - ASC_R);
+    maxX = Math.max(maxX, association.x + ASC_R);
+    maxY = Math.max(maxY, association.y + ASC_R);
+  });
+
+  if (!entities.length && !associations.length) {
+    minX = minY = 0;
+    maxX = maxY = 0;
+  }
+
+  return { minX, minY, maxX, maxY };
+}
+
+// ── Import SQL ────────────────────────────────────────────────
+
+document.getElementById('btn-import-sql').addEventListener('click', () => {
+  document.getElementById('sql-import-input').value = '';
+  document.getElementById('sql-import-error').classList.add('hidden');
+  document.getElementById('modal-import-sql').classList.remove('hidden');
+  document.getElementById('sql-import-input').focus();
+});
+
+document.getElementById('btn-import-sql-cancel').addEventListener('click', () => {
+  document.getElementById('modal-import-sql').classList.add('hidden');
+});
+
+document.getElementById('btn-import-sql-file').addEventListener('click', () => {
+  document.getElementById('sql-file-input').click();
+});
+
+document.getElementById('sql-file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('sql-import-input').value = ev.target.result;
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.getElementById('btn-import-sql-go').addEventListener('click', () => {
+  const sql = document.getElementById('sql-import-input').value;
+  const errBox = document.getElementById('sql-import-error');
+  errBox.classList.add('hidden');
+
+  try {
+    const result = parseSQLtoMCD(sql);
+    if (result.entities.length === 0) {
+      errBox.textContent = 'Aucun CREATE TABLE trouvé dans le script.';
+      errBox.classList.remove('hidden');
+      return;
+    }
+    // Confirmation si le canvas n'est pas vide
+    if ((state.entities.length > 0 || state.associations.length > 0) &&
+        !confirm('Le canvas actuel sera remplacé. Continuer ?')) return;
+
+    state.entities     = result.entities;
+    state.associations = result.associations;
+    state.connections  = result.connections;
+    state.nextId       = result.nextId;
+    state.selected     = null;
+
+    document.getElementById('modal-import-sql').classList.add('hidden');
+    autoLayoutDiagram(state.entities, state.associations, state.connections);
+    render();
+    fitToContent();
+    showToast(`MCD généré : ${result.entities.length} entité(s), ${result.associations.length} association(s).`);
+  } catch (err) {
+    errBox.textContent = 'Erreur de parsing : ' + err.message;
+    errBox.classList.remove('hidden');
+  }
+});
+
+/**
+ * Parse un script SQL (CREATE TABLE …) et retourne un état MCD prêt à être
+ * injecté dans `state`.
+ *
+ * Stratégie :
+ *  1. Extrait chaque bloc CREATE TABLE.
+ *  2. Pour chaque table → une Entité avec ses colonnes/types/PK.
+ *  3. Chaque FOREIGN KEY (col) REFERENCES autreTable(col) → Association + 2 Connexions.
+ *     • La table qui porte la FK a cardinalité 0,1 ou 1,1 (selon NOT NULL).
+ *     • La table référencée a cardinalité 1,N.
+ *  4. Une mise en page automatique est appliquée après l'import.
+ */
+function parseSQLtoMCD(sql) {
+  // ── Normalisation ────────────────────────────────────────
+  // Supprime les commentaires -- et /* */
+  const clean = sql
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/--[^\n]*/g, '')
+    .replace(/\r\n/g, '\n');
+
+  // ── Extraction des blocs CREATE TABLE ────────────────────
+  // Cherche CREATE [TEMPORARY] TABLE [IF NOT EXISTS] nom ( … );
+  const tableRx = /CREATE\s+(?:TEMPORARY\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"\[]?[\w]+[`"\]]?)\s*\(([^;]*)\)\s*;?/gi;
+
+  const tables = []; // [{ rawName, body }]
+  let m;
+  while ((m = tableRx.exec(clean)) !== null) {
+    tables.push({
+      rawName: m[1].replace(/[`"[\]]/g, ''),
+      body:    m[2],
+    });
+  }
+
+  if (tables.length === 0) return { entities: [], associations: [], connections: [], nextId: 1 };
+
+  // ── Détection des tables de jonction (N,N) ───────────────
+  // Une table de jonction a ≥ 2 FK et aucune (ou peu de) colonnes propres non-FK.
+  // On les identifie après le premier passage pour ne pas créer d'entité pour elles.
+  const fkMap   = new Map(); // tableName → [{col, refTable, refCol, notNull}]
+  const colsMap = new Map(); // tableName → [{name, type, isPK, notNull}]
+  const pkMap   = new Map(); // tableName → [colName]  (PK déclarée en contrainte)
+
+  tables.forEach(t => {
+    const name = t.rawName.toLowerCase();
+    const fks  = [];
+    const cols = [];
+    const pks  = new Set();
+
+    // Sépare les clauses de la table (attention aux parenthèses imbriquées dans les types)
+    const clauses = splitClauses(t.body);
+
+    clauses.forEach(clause => {
+      const c = clause.trim();
+      if (!c) return;
+
+      // PRIMARY KEY (col1, col2, …) — contrainte de table
+      const pkMatch = /^(?:CONSTRAINT\s+\S+\s+)?PRIMARY\s+KEY\s*\(([^)]+)\)/i.exec(c);
+      if (pkMatch) {
+        pkMatch[1].split(',').forEach(col => pks.add(normCol(col)));
+        return;
+      }
+
+      // FOREIGN KEY (col) REFERENCES ref_table (ref_col) [ON DELETE …] [ON UPDATE …]
+      const fkMatch = /^(?:CONSTRAINT\s+\S+\s+)?FOREIGN\s+KEY\s*\(([^)]+)\)\s*REFERENCES\s+([`"\[]?[\w]+[`"\]]?)\s*\(([^)]+)\)/i.exec(c);
+      if (fkMatch) {
+        fks.push({
+          col:      normCol(fkMatch[1]),
+          refTable: fkMatch[2].replace(/[`"[\]]/g, '').toLowerCase(),
+          refCol:   normCol(fkMatch[3]),
+        });
+        return;
+      }
+
+      // Colonne ordinaire : nom type [NOT NULL] [PRIMARY KEY] [AUTO_INCREMENT] …
+      const colMatch = /^([`"\[]?[\w]+[`"\]]?)\s+([\w]+(?:\s*\([^)]*\))?)/i.exec(c);
+      if (colMatch) {
+        const colName = normCol(colMatch[1]);
+        const colType = normalizeType(colMatch[2]);
+        const notNull = /NOT\s+NULL/i.test(c);
+        const inlinePK = /PRIMARY\s+KEY/i.test(c);
+        if (inlinePK) pks.add(colName);
+        cols.push({ name: colName, type: colType, isPK: inlinePK, notNull });
+      }
+    });
+
+    // Applique les PK de contrainte aux colonnes
+    cols.forEach(col => {
+      if (pks.has(col.name)) col.isPK = true;
+    });
+
+    fkMap.set(name, fks);
+    colsMap.set(name, cols);
+    pkMap.set(name, [...pks]);
+  });
+
+  // ── Identifie les tables de jonction ─────────────────────
+  const junctionTables = new Set();
+  fkMap.forEach((fks, name) => {
+    if (fks.length < 2) return;
+    const ownCols = (colsMap.get(name) ?? []).filter(c => !fks.some(fk => fk.col === c.name));
+    // Considérée comme jonction si ≤ 1 colonne propre non-FK
+    if (ownCols.length <= 1) junctionTables.add(name);
+  });
+
+  const entityTables = tables.filter(t => !junctionTables.has(t.rawName.toLowerCase()));
+  const n = entityTables.length;
+
+  let nextId = 1;
+  const entities     = [];
+  const associations = [];
+  const connections  = [];
+
+  // Crée les entités
+  const entByTable = new Map(); // tableName → entity
+  entityTables.forEach((t, i) => {
+    const cols = colsMap.get(t.rawName.toLowerCase()) ?? [];
+    // Retire les colonnes FK (elles deviennent des associations)
+    const fks  = fkMap.get(t.rawName.toLowerCase()) ?? [];
+    const fkCols = new Set(fks.map(f => f.col));
+    const attrs = cols
+      .filter(c => !fkCols.has(c.name))
+      .map(c => ({ name: c.name, type: c.type, isPK: c.isPK }));
+
+    // S'il n'y a aucun attribut PK, on en crée un par défaut
+    if (!attrs.some(a => a.isPK)) {
+      attrs.unshift({ name: 'id', type: 'INT', isPK: true });
+    }
+
+    const ent = {
+      id:   nextId++,
+      name: t.rawName.toUpperCase(),
+      x:    80 + (i % Math.max(1, Math.ceil(Math.sqrt(n || 1)))) * 220,
+      y:    80 + Math.floor(i / Math.max(1, Math.ceil(Math.sqrt(n || 1)))) * 160,
+      attributes: attrs,
+    };
+    entities.push(ent);
+    entByTable.set(t.rawName.toLowerCase(), ent);
+  });
+
+  // ── FK simples (1,N) ─────────────────────────────────────
+  // Chaque FK dans une table non-jonction → Association entre les deux entités
+  const assocKey = new Set(); // évite les doublons
+  fkMap.forEach((fks, tableName) => {
+    if (junctionTables.has(tableName)) return;
+    const srcEnt = entByTable.get(tableName);
+    if (!srcEnt) return;
+
+    fks.forEach(fk => {
+      const refEnt = entByTable.get(fk.refTable);
+      if (!refEnt) return;
+
+      const key = [Math.min(srcEnt.id, refEnt.id), Math.max(srcEnt.id, refEnt.id)].join('-');
+      if (assocKey.has(key)) return;
+      assocKey.add(key);
+
+      // Position de l'association : milieu entre les deux entités
+      const ax = Math.round((srcEnt.x + refEnt.x) / 2);
+      const ay = Math.round((srcEnt.y + refEnt.y) / 2);
+      const assocName = buildAssocName(srcEnt.name, refEnt.name);
+
+      const assoc = { id: nextId++, name: assocName, x: ax, y: ay };
+      associations.push(assoc);
+
+      // Côté FK (src) → cardinalité 0,1 ou 1,1 selon NOT NULL
+      const fkColDef = (colsMap.get(tableName) ?? []).find(c => c.name === fk.col);
+      const srcCard  = (fkColDef && !fkColDef.notNull) ? '0,1' : '1,1';
+
+      connections.push({ id: nextId++, assocId: assoc.id, entityId: srcEnt.id,  cardinality: srcCard });
+      connections.push({ id: nextId++, assocId: assoc.id, entityId: refEnt.id,  cardinality: '1,N'  });
+    });
+  });
+
+  // ── Tables de jonction (N,N) ──────────────────────────────
+  junctionTables.forEach(jName => {
+    const fks = fkMap.get(jName) ?? [];
+    const involvedEnts = fks.map(fk => entByTable.get(fk.refTable)).filter(Boolean);
+    if (involvedEnts.length < 2) return;
+
+    // Déduplique les paires pour ne créer qu'une association par couple
+    for (let i = 0; i < involvedEnts.length; i++) {
+      for (let j = i + 1; j < involvedEnts.length; j++) {
+        const eA = involvedEnts[i];
+        const eB = involvedEnts[j];
+        const key = [Math.min(eA.id, eB.id), Math.max(eA.id, eB.id)].join('-');
+        if (assocKey.has(key)) continue;
+        assocKey.add(key);
+
+        const ax    = Math.round((eA.x + eB.x) / 2);
+        const ay    = Math.round((eA.y + eB.y) / 2);
+        const assoc = { id: nextId++, name: jName.toUpperCase(), x: ax, y: ay };
+        associations.push(assoc);
+
+        connections.push({ id: nextId++, assocId: assoc.id, entityId: eA.id, cardinality: '1,N' });
+        connections.push({ id: nextId++, assocId: assoc.id, entityId: eB.id, cardinality: '1,N' });
+      }
+    }
+  });
+
+  return { entities, associations, connections, nextId };
+}
+
+// ── Helpers du parser SQL ─────────────────────────────────────
+
+/** Normalise un nom de colonne (retire backticks/guillemets et met en minuscules) */
+function normCol(s) {
+  return s.trim().replace(/[`"[\]]/g, '').toLowerCase();
+}
+
+/** Normalise un type SQL vers un des types connus de l'éditeur */
+function normalizeType(raw) {
+  const t = raw.trim().toUpperCase();
+  if (/^BIGINT/.test(t))               return 'BIGINT';
+  if (/^SMALLINT/.test(t))             return 'SMALLINT';
+  if (/^INT|^INTEGER/.test(t))         return 'INT';
+  if (/^VARCHAR\s*\(\s*5[0-9]\s*\)/.test(t))  return 'VARCHAR(50)';
+  if (/^VARCHAR\s*\(\s*1[0-9]{2}\s*\)/.test(t)) return 'VARCHAR(100)';
+  if (/^VARCHAR/.test(t))              return 'VARCHAR(255)';
+  if (/^CHAR/.test(t))                 return 'CHAR(10)';
+  if (/^TEXT|^LONGTEXT|^MEDIUMTEXT/.test(t)) return 'TEXT';
+  if (/^DATETIME/.test(t))             return 'DATETIME';
+  if (/^TIMESTAMP/.test(t))            return 'TIMESTAMP';
+  if (/^DATE/.test(t))                 return 'DATE';
+  if (/^BOOL/.test(t))                 return 'BOOLEAN';
+  if (/^DOUBLE/.test(t))               return 'DOUBLE';
+  if (/^FLOAT/.test(t))                return 'FLOAT';
+  if (/^DECIMAL|^NUMERIC/.test(t))     return 'DECIMAL(10,2)';
+  return raw.trim(); // conserve le type inconnu tel quel
+}
+
+/** Génère un nom d'association à partir de deux noms d'entités */
+function buildAssocName(nameA, nameB) {
+  const a = nameA.replace(/_/g, ' ').split(' ')[0];
+  const b = nameB.replace(/_/g, ' ').split(' ')[0];
+  return (a.substring(0, 4) + '_' + b.substring(0, 4)).toUpperCase();
+}
+
+/**
+ * Découpe le corps d'un CREATE TABLE en clauses individuelles,
+ * en respectant les parenthèses imbriquées (ex: DECIMAL(10,2)).
+ */
+function splitClauses(body) {
+  const clauses = [];
+  let depth = 0, current = '';
+  for (const ch of body) {
+    if (ch === '(') { depth++; current += ch; }
+    else if (ch === ')') { depth--; current += ch; }
+    else if (ch === ',' && depth === 0) {
+      clauses.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  if (current.trim()) clauses.push(current.trim());
+  return clauses;
+}
+
 // ── Init ──────────────────────────────────────────────────────
+applyCamera();
 updateHint();
 render();

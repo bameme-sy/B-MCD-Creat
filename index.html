@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCD Creator - Presentation</title>
+  <title>MCD Creator - Accueil</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="landing.css">
 </head>
 <body>
@@ -15,19 +16,22 @@
 
   <header class="topbar">
     <div class="brand">MCD Creator</div>
-    <a class="btn btn-outline" href="editor.html">Ouvrir l'editeur</a>
+    <div class="topbar-actions">
+      <button id="lang-toggle" class="btn btn-ghost btn-lang" type="button">FR / EN</button>
+      <a class="btn btn-outline" href="editor.html" data-i18n="openEditor">Ouvrir l'editeur</a>
+    </div>
   </header>
 
   <main class="hero">
     <section class="hero-content">
-      <p class="eyebrow">Conception de bases de donnees</p>
-      <h1>Construis tes modeles MCD en mode visuel.</h1>
-      <p class="lead">
-        Cree des entites, relie des associations, ajuste les cardinalites puis exporte en SVG, PNG, SQL ou JSON.
+      <p class="eyebrow" data-i18n="eyebrow">Modelisation de bases de donnees</p>
+      <h1 data-i18n="heroTitle">Transforme tes schemas SQL en MCD visuels, puis exporte-les en un clic.</h1>
+      <p class="lead" data-i18n="heroLead">
+        Cree tes entites manuellement, importe un script SQL pour generer ton diagramme automatiquement, reorganise le tout proprement puis exporte en SQL, SVG, PNG ou JSON.
       </p>
       <div class="hero-actions">
-        <a class="btn btn-primary" href="editor.html">Commencer maintenant</a>
-        <a class="btn btn-ghost" href="#features">Voir les fonctionnalites</a>
+        <a class="btn btn-primary" href="editor.html" data-i18n="launchEditor">Lancer l'editeur</a>
+        <a class="btn btn-ghost" href="#features" data-i18n="discoverFeatures">Decouvrir les fonctionnalites</a>
       </div>
     </section>
 
@@ -37,15 +41,15 @@
       </div>
       <div class="mockup-body">
         <div class="mock-card">
-          <h3>CLIENT</h3>
+          <h3 data-i18n="mockUser">UTILISATEUR</h3>
           <p># id : INT</p>
-          <p>- nom : VARCHAR(100)</p>
+          <p>- email : VARCHAR(255)</p>
         </div>
-        <div class="mock-diamond">PASSE</div>
+        <div class="mock-diamond" data-i18n="mockRelation">CREE</div>
         <div class="mock-card">
-          <h3>COMMANDE</h3>
+          <h3 data-i18n="mockProject">PROJET</h3>
           <p># id : INT</p>
-          <p>- date : DATE</p>
+          <p data-i18n="mockProjectField">- titre : VARCHAR(100)</p>
         </div>
       </div>
     </section>
@@ -53,17 +57,303 @@
 
   <section id="features" class="features">
     <article>
-      <h2>Edition intuitive</h2>
-      <p>Glisser-deposer, double-clic pour modifier et mode connexion avec cardinalites.</p>
+      <h2 data-i18n="feature1Title">Edition visuelle rapide</h2>
+      <p data-i18n="feature1Text">Ajoute des entites, relie des associations, modifie les attributs et ajuste les cardinalites directement dans le canvas.</p>
     </article>
     <article>
-      <h2>Exports complets</h2>
-      <p>Recupere ton schema en SVG, PNG, SQL ou JSON pour continuer ton projet.</p>
+      <h2 data-i18n="feature2Title">Import SQL intelligent</h2>
+      <p data-i18n="feature2Text">Colle un script SQL ou charge un fichier pour reconstruire automatiquement ton MCD avec associations et organisation initiale.</p>
     </article>
     <article>
-      <h2>100% navigateur</h2>
-      <p>Aucune dependance lourde: un simple serveur statique suffit pour l'utiliser.</p>
+      <h2 data-i18n="feature3Title">Zoom, auto-layout et export</h2>
+      <p data-i18n="feature3Text">Navigue facilement dans les gros schemas, recentre le contenu automatiquement puis exporte en SQL, SVG, PNG ou JSON.</p>
     </article>
   </section>
+
+  <section id="steps" class="steps">
+    <div class="steps-intro">
+      <p class="eyebrow" data-i18n="stepsEyebrow">Etapes</p>
+      <h2 data-i18n="stepsTitle">Comment ca marche ?</h2>
+      <p class="steps-lead" data-i18n="stepsLead">Passe d'un script SQL ou d'une idee brute a un diagramme clair en quelques actions simples.</p>
+    </div>
+
+    <div class="steps-grid">
+      <article class="step-card">
+        <span class="step-index">01</span>
+        <h3 data-i18n="step1Title">Cree ou importe</h3>
+        <p data-i18n="step1Text">Ajoute tes entites a la main ou colle directement un script SQL pour generer automatiquement la base du MCD.</p>
+      </article>
+      <article class="step-card">
+        <span class="step-index">02</span>
+        <h3 data-i18n="step2Title">Relie et ajuste</h3>
+        <p data-i18n="step2Text">Edite les attributs, configure les cardinalites et laisse l'outil repositionner les tables et associations proprement.</p>
+      </article>
+      <article class="step-card">
+        <span class="step-index">03</span>
+        <h3 data-i18n="step3Title">Explore le diagramme</h3>
+        <p data-i18n="step3Text">Utilise le zoom, le deplacement du canvas et l'ajustement automatique pour travailler confortablement sur les gros schemas.</p>
+      </article>
+      <article class="step-card">
+        <span class="step-index">04</span>
+        <h3 data-i18n="step4Title">Exporte ton travail</h3>
+        <p data-i18n="step4Text">Recupere ton schema final en SQL, SVG, PNG ou JSON pour l'integrer facilement a ton projet.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="mobile" class="mobile-section">
+    <div class="mobile-card">
+      <div class="mobile-copy">
+        <p class="eyebrow" data-i18n="mobileEyebrow">Mobile</p>
+        <h2 data-i18n="mobileTitle">Utilisable aussi sur mobile et tablette.</h2>
+        <p class="mobile-lead" data-i18n="mobileLead">L'editeur s'adapte aux petits ecrans avec un panneau d'outils mobile, des modales optimisees et des interactions tactiles plus confortables.</p>
+      </div>
+
+      <div class="mobile-points">
+        <article>
+          <h3 data-i18n="mobilePoint1Title">Outils accessibles</h3>
+          <p data-i18n="mobilePoint1Text">Un bouton permet d'ouvrir rapidement les actions principales sans encombrer le canvas.</p>
+        </article>
+        <article>
+          <h3 data-i18n="mobilePoint2Title">Navigation tactile</h3>
+          <p data-i18n="mobilePoint2Text">Le zoom, le deplacement et les controles ont ete ajustes pour une utilisation plus fluide au doigt.</p>
+        </article>
+        <article>
+          <h3 data-i18n="mobilePoint3Title">Edition adaptee</h3>
+          <p data-i18n="mobilePoint3Text">Les formulaires et fenetres se replient proprement pour modifier les entites et associations sur petit ecran.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="about">
+    <div class="about-card">
+      <p class="eyebrow" data-i18n="aboutEyebrow">A propos</p>
+      <h2 data-i18n="aboutTitle">Un outil simple pour passer du SQL au MCD sans perdre de temps.</h2>
+      <p data-i18n="aboutText1">MCD Creator est une interface web legere qui aide a visualiser, organiser et exporter des schemas de bases de donnees sans installation complexe.</p>
+      <p data-i18n="aboutText2">L'application combine edition manuelle, import de scripts SQL, generation automatique des associations et mise en page adaptee aux diagrammes plus volumineux.</p>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <section class="footer-brand-block">
+        <div class="brand footer-brand">MCD Creator</div>
+        <p class="footer-text" data-i18n="footerBrandText">Outil web de modelisation pour creer, importer, organiser et exporter tes MCD plus rapidement.</p>
+        <div class="footer-signature">
+          <span class="footer-signature-label" data-i18n="footerSignatureLabel">Créé par</span>
+          <a class="footer-signature-link" href="https://btechrise.fr/">B'TechRise</a>
+        </div>
+      </section>
+
+      <section>
+        <h3 class="footer-title" data-i18n="footerNavTitle">Navigation</h3>
+        <nav class="footer-links" aria-label="Footer navigation">
+          <a href="#features" data-i18n="footerLinkFeatures">Fonctionnalites</a>
+          <a href="#steps" data-i18n="footerLinkSteps">Etapes</a>
+          <a href="#mobile" data-i18n="footerLinkMobile">Mobile</a>
+          <a href="#about" data-i18n="footerLinkAbout">A propos</a>
+          <a href="editor.html" data-i18n="footerLinkEditor">Ouvrir l'editeur</a>
+        </nav>
+      </section>
+
+      <section>
+        <h3 class="footer-title" data-i18n="footerToolsTitle">Fonctions cles</h3>
+        <ul class="footer-list">
+          <li data-i18n="footerTool1">Import de scripts SQL</li>
+          <li data-i18n="footerTool2">Edition visuelle des entites</li>
+          <li data-i18n="footerTool3">Auto-layout et zoom</li>
+          <li data-i18n="footerTool4">Exports SQL, SVG, PNG et JSON</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3 class="footer-title" data-i18n="footerFollowTitle">Suivez nous</h3>
+        <div class="footer-links footer-socials">
+          <a href="https://github.com/bameme-sy/B-MCD-Creat" target="_blank" rel="noreferrer" aria-label="GitHub">
+            <span class="social-badge social-github"><i class="bi bi-github" aria-hidden="true"></i></span>
+            <span>GitHub</span>
+          </a>
+          <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram">
+            <span class="social-badge social-instagram"><i class="bi bi-instagram" aria-hidden="true"></i></span>
+            <span>Instagram</span>
+          </a>
+          <a href="https://www.tiktok.com/" target="_blank" rel="noreferrer" aria-label="TikTok">
+            <span class="social-badge social-tiktok"><i class="bi bi-tiktok" aria-hidden="true"></i></span>
+            <span>TikTok</span>
+          </a>
+          <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" aria-label="Facebook">
+            <span class="social-badge social-facebook"><i class="bi bi-facebook" aria-hidden="true"></i></span>
+            <span>Facebook</span>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <h3 class="footer-title" data-i18n="footerCtaTitle">Commencer</h3>
+        <p class="footer-text" data-i18n="footerCtaText">Passe directement dans l'editeur pour construire ou importer ton prochain diagramme.</p>
+        <a class="btn btn-primary footer-cta" href="editor.html" data-i18n="footerCtaButton">Acceder a l'editeur</a>
+      </section>
+    </div>
+
+    <div class="footer-bottom">
+      <p data-i18n="footerBottomLeft">MCD Creator — interface de modelisation de bases de donnees.</p>
+      <p data-i18n="footerBottomRight">Concu pour visualiser rapidement les structures SQL et MCD.</p>
+    </div>
+  </footer>
+
+  <script>
+    const translations = {
+      fr: {
+        title: 'MCD Creator - Accueil',
+        openEditor: "Ouvrir l'editeur",
+        eyebrow: 'Modelisation de bases de donnees',
+        heroTitle: 'Transforme tes schemas SQL en MCD visuels, puis exporte-les en un clic.',
+        heroLead: 'Cree tes entites manuellement, importe un script SQL pour generer ton diagramme automatiquement, reorganise le tout proprement puis exporte en SQL, SVG, PNG ou JSON.',
+        launchEditor: "Lancer l'editeur",
+        discoverFeatures: 'Decouvrir les fonctionnalites',
+        mockUser: 'UTILISATEUR',
+        mockRelation: 'CREE',
+        mockProject: 'PROJET',
+        mockProjectField: '- titre : VARCHAR(100)',
+        feature1Title: 'Edition visuelle rapide',
+        feature1Text: 'Ajoute des entites, relie des associations, modifie les attributs et ajuste les cardinalites directement dans le canvas.',
+        feature2Title: 'Import SQL intelligent',
+        feature2Text: 'Colle un script SQL ou charge un fichier pour reconstruire automatiquement ton MCD avec associations et organisation initiale.',
+        feature3Title: 'Zoom, auto-layout et export',
+        feature3Text: 'Navigue facilement dans les gros schemas, recentre le contenu automatiquement puis exporte en SQL, SVG, PNG ou JSON.',
+        aboutEyebrow: 'A propos',
+        aboutTitle: 'Un outil simple pour passer du SQL au MCD sans perdre de temps.',
+        aboutText1: 'MCD Creator est une interface web legere qui aide a visualiser, organiser et exporter des schemas de bases de donnees sans installation complexe.',
+        aboutText2: 'L\'application combine edition manuelle, import de scripts SQL, generation automatique des associations et mise en page adaptee aux diagrammes plus volumineux.',
+        footerBrandText: 'Outil web de modelisation pour creer, importer, organiser et exporter tes MCD plus rapidement.',
+        footerNavTitle: 'Navigation',
+        footerLinkFeatures: 'Fonctionnalites',
+        footerLinkSteps: 'Etapes',
+        footerLinkMobile: 'Mobile',
+        footerLinkAbout: 'A propos',
+        footerLinkEditor: "Ouvrir l'editeur",
+        stepsEyebrow: 'Etapes',
+        stepsTitle: 'Comment ca marche ?',
+        stepsLead: "Passe d'un script SQL ou d'une idee brute a un diagramme clair en quelques actions simples.",
+        step1Title: 'Cree ou importe',
+        step1Text: 'Ajoute tes entites a la main ou colle directement un script SQL pour generer automatiquement la base du MCD.',
+        step2Title: 'Relie et ajuste',
+        step2Text: "Edite les attributs, configure les cardinalites et laisse l'outil repositionner les tables et associations proprement.",
+        step3Title: 'Explore le diagramme',
+        step3Text: "Utilise le zoom, le deplacement du canvas et l'ajustement automatique pour travailler confortablement sur les gros schemas.",
+        step4Title: 'Exporte ton travail',
+        step4Text: "Recupere ton schema final en SQL, SVG, PNG ou JSON pour l'integrer facilement a ton projet.",
+        mobileEyebrow: 'Mobile',
+        mobileTitle: 'Utilisable aussi sur mobile et tablette.',
+        mobileLead: "L'editeur s'adapte aux petits ecrans avec un panneau d'outils mobile, des modales optimisees et des interactions tactiles plus confortables.",
+        mobilePoint1Title: 'Outils accessibles',
+        mobilePoint1Text: "Un bouton permet d'ouvrir rapidement les actions principales sans encombrer le canvas.",
+        mobilePoint2Title: 'Navigation tactile',
+        mobilePoint2Text: 'Le zoom, le deplacement et les controles ont ete ajustes pour une utilisation plus fluide au doigt.',
+        mobilePoint3Title: 'Edition adaptee',
+        mobilePoint3Text: 'Les formulaires et fenetres se replient proprement pour modifier les entites et associations sur petit ecran.',
+        footerSignatureLabel: 'Créé par',
+        footerToolsTitle: 'Fonctions cles',
+        footerTool1: 'Import de scripts SQL',
+        footerTool2: 'Edition visuelle des entites',
+        footerTool3: 'Auto-layout et zoom',
+        footerTool4: 'Exports SQL, SVG, PNG et JSON',
+        footerFollowTitle: 'Suivez nous',
+        footerCtaTitle: 'Commencer',
+        footerCtaText: "Passe directement dans l'editeur pour construire ou importer ton prochain diagramme.",
+        footerCtaButton: "Acceder a l'editeur",
+        footerBottomLeft: 'MCD Creator — interface de modelisation de bases de donnees.',
+        footerBottomRight: 'Concu pour visualiser rapidement les structures SQL et MCD.',
+        langLabel: 'FR / EN'
+      },
+      en: {
+        title: 'MCD Creator - Home',
+        openEditor: 'Open editor',
+        eyebrow: 'Database modeling',
+        heroTitle: 'Turn your SQL schemas into visual ER models and export them in one click.',
+        heroLead: 'Create entities manually, import an SQL script to generate your diagram automatically, organize everything neatly, then export to SQL, SVG, PNG, or JSON.',
+        launchEditor: 'Launch editor',
+        discoverFeatures: 'Explore features',
+        mockUser: 'USER',
+        mockRelation: 'CREATES',
+        mockProject: 'PROJECT',
+        mockProjectField: '- title : VARCHAR(100)',
+        feature1Title: 'Fast visual editing',
+        feature1Text: 'Add entities, connect associations, edit attributes, and fine-tune cardinalities directly on the canvas.',
+        feature2Title: 'Smart SQL import',
+        feature2Text: 'Paste a SQL script or load a file to automatically rebuild your MCD with associations and an initial layout.',
+        feature3Title: 'Zoom, auto-layout, and export',
+        feature3Text: 'Navigate large schemas easily, recenter the content automatically, then export to SQL, SVG, PNG, or JSON.',
+        aboutEyebrow: 'About',
+        aboutTitle: 'A simple tool to go from SQL to MCD without losing time.',
+        aboutText1: 'MCD Creator is a lightweight web interface that helps you visualize, organize, and export database schemas without any heavy setup.',
+        aboutText2: 'The application combines manual editing, SQL script import, automatic association generation, and layouts adapted to larger diagrams.',
+        footerBrandText: 'A web modeling tool to create, import, organize, and export your MCD diagrams faster.',
+        footerNavTitle: 'Navigation',
+        footerLinkFeatures: 'Features',
+        footerLinkSteps: 'Steps',
+        footerLinkMobile: 'Mobile',
+        footerLinkAbout: 'About',
+        footerLinkEditor: 'Open editor',
+        stepsEyebrow: 'Steps',
+        stepsTitle: 'How does it work?',
+        stepsLead: 'Go from a raw SQL script or rough idea to a clean diagram in just a few simple actions.',
+        step1Title: 'Create or import',
+        step1Text: 'Add your entities manually or paste an SQL script to automatically generate the base structure of the diagram.',
+        step2Title: 'Connect and refine',
+        step2Text: 'Edit attributes, set cardinalities, and let the tool reposition tables and associations neatly.',
+        step3Title: 'Explore the diagram',
+        step3Text: 'Use zoom, canvas panning, and automatic fitting to work comfortably on larger schemas.',
+        step4Title: 'Export your work',
+        step4Text: 'Download the final schema as SQL, SVG, PNG, or JSON so it fits easily into your project.',
+        mobileEyebrow: 'Mobile',
+        mobileTitle: 'Also usable on mobile and tablet.',
+        mobileLead: 'The editor adapts to smaller screens with a mobile tools panel, optimized modals, and more comfortable touch interactions.',
+        mobilePoint1Title: 'Accessible tools',
+        mobilePoint1Text: 'A dedicated button opens the main actions quickly without cluttering the canvas.',
+        mobilePoint2Title: 'Touch navigation',
+        mobilePoint2Text: 'Zoom, panning, and controls were refined for smoother finger-based interaction.',
+        mobilePoint3Title: 'Adapted editing',
+        mobilePoint3Text: 'Forms and panels fold cleanly so entities and associations stay easy to edit on smaller screens.',
+        footerSignatureLabel: 'Created by',
+        footerToolsTitle: 'Key features',
+        footerTool1: 'SQL script import',
+        footerTool2: 'Visual entity editing',
+        footerTool3: 'Auto-layout and zoom',
+        footerTool4: 'SQL, SVG, PNG, and JSON exports',
+        footerFollowTitle: 'Follow us',
+        footerCtaTitle: 'Get started',
+        footerCtaText: 'Jump straight into the editor to build or import your next diagram.',
+        footerCtaButton: 'Open the editor',
+        footerBottomLeft: 'MCD Creator — database modeling interface.',
+        footerBottomRight: 'Designed to visualize SQL and MCD structures quickly.',
+        langLabel: 'EN / FR'
+      }
+    };
+
+    const langButton = document.getElementById('lang-toggle');
+    const savedLang = localStorage.getItem('mcd-landing-lang');
+    let currentLang = savedLang === 'en' ? 'en' : 'fr';
+
+    function applyTranslations(lang) {
+      const dict = translations[lang] ?? translations.fr;
+      document.documentElement.lang = lang;
+      document.title = dict.title;
+      document.querySelectorAll('[data-i18n]').forEach(node => {
+        const key = node.dataset.i18n;
+        if (dict[key]) node.textContent = dict[key];
+      });
+      langButton.textContent = dict.langLabel;
+      localStorage.setItem('mcd-landing-lang', lang);
+    }
+
+    langButton.addEventListener('click', () => {
+      currentLang = currentLang === 'fr' ? 'en' : 'fr';
+      applyTranslations(currentLang);
+    });
+
+    applyTranslations(currentLang);
+  </script>
 </body>
 </html>

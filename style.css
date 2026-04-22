@@ -59,7 +59,8 @@ body.sidebar-open {
 
 #app {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
   position: relative;
   z-index: 1;
   padding: 14px;
@@ -93,7 +94,10 @@ body.sidebar-open {
 }
 
 .sidebar-head {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .sidebar-title {
@@ -103,9 +107,30 @@ body.sidebar-open {
   text-align: center;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
-  margin-bottom: 14px;
+  margin-bottom: 0;
+  flex: 1;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+#btn-lang-toggle {
+  width: 42px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+#btn-lang-toggle:hover {
+  background: rgba(15, 106, 91, 0.12);
+  border-color: var(--accent);
+  color: var(--accent-dark);
 }
 
 .sidebar-title a {
@@ -184,12 +209,150 @@ body.sidebar-open {
   font-weight: 600;
 }
 
+.btn.btn-toggle.active {
+  background: rgba(15, 106, 91, 0.16);
+  border-color: var(--accent);
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
 .btn.btn-sm {
   padding: 5px 10px;
   font-size: 11px;
   width: auto;
   display: inline-block;
   margin-bottom: 0;
+}
+
+/* ============================
+   Accessibility
+   ============================ */
+:where(
+  button,
+  .btn,
+  .zoom-btn,
+  .context-menu-item,
+  input,
+  select,
+  textarea,
+  a,
+  #mobile-sidebar-toggle,
+  #sidebar-close
+):focus-visible {
+  outline: 3px solid rgba(15, 106, 91, 0.38);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(255, 253, 248, 0.9);
+}
+
+.btn:focus-visible,
+.zoom-btn:focus-visible,
+.context-menu-item:focus-visible {
+  border-color: var(--accent);
+}
+
+@media (pointer: coarse) {
+  .btn,
+  .zoom-btn,
+  .context-menu-item,
+  #mobile-sidebar-toggle,
+  #sidebar-close {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .btn:hover {
+    transform: none;
+  }
+
+  .btn:active {
+    transform: none;
+  }
+}
+
+/* ── New element type buttons ─────────────────────────────── */
+.btn.btn-note {
+  background: rgba(249, 168, 37, 0.12);
+  border-color: #f9a825;
+  color: #e65100;
+}
+.btn.btn-note:hover {
+  background: rgba(249, 168, 37, 0.25);
+  border-color: #e65100;
+}
+
+.btn.btn-group-elem {
+  background: rgba(73, 98, 208, 0.09);
+  border-color: #4962d0;
+  color: #2c3e9e;
+}
+.btn.btn-group-elem:hover {
+  background: rgba(73, 98, 208, 0.22);
+  border-color: #2c3e9e;
+}
+
+.btn.btn-inherit {
+  background: rgba(142, 68, 173, 0.09);
+  border-color: #8e44ad;
+  color: #6c3483;
+}
+.btn.btn-inherit:hover {
+  background: rgba(142, 68, 173, 0.22);
+  border-color: #6c3483;
+}
+
+.btn.btn-constraint {
+  background: rgba(230, 126, 34, 0.12);
+  border-color: #e67e22;
+  color: #9c4f13;
+}
+.btn.btn-constraint:hover {
+  background: rgba(230, 126, 34, 0.24);
+  border-color: #b85f17;
+}
+
+.btn.btn-label {
+  background: rgba(108, 122, 224, 0.11);
+  border-color: #6c7ae0;
+  color: #3d49a4;
+}
+.btn.btn-label:hover {
+  background: rgba(108, 122, 224, 0.24);
+  border-color: #4959c5;
+}
+
+/* ── Group colour picker ─────────────────────────────────── */
+.color-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.color-swatch:hover {
+  transform: scale(1.15);
+}
+.color-swatch.active {
+  border-color: rgba(0,0,0,0.35);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.18);
+  transform: scale(1.15);
 }
 
 #tool-hint-box {
@@ -208,6 +371,7 @@ body.sidebar-open {
    ============================ */
 #canvas-container {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   position: relative;
   border: 1px solid var(--line);
@@ -266,6 +430,31 @@ body.sidebar-open {
 
 .modal-box.large {
   width: 640px;
+}
+
+#modal-note .modal-box.small {
+  width: clamp(320px, 58vw, 640px);
+}
+
+#note-text-input {
+  width: 100%;
+  min-height: 120px;
+  max-height: 52vh;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  font-family: inherit;
+  background: #fff;
+  resize: none;
+  overflow-y: hidden;
+  transition: border-color 0.15s;
+}
+
+#note-text-input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .modal-box h2 {
@@ -381,6 +570,20 @@ body.sidebar-open {
   color: #e74c3c;
 }
 
+.assoc-attr-row .attr-name {
+  flex: 1;
+}
+
+.assoc-attr-row .attr-type {
+  width: 150px;
+}
+
+.empty-assoc-note {
+  font-size: 12px;
+  color: #9a9387;
+  margin-bottom: 6px;
+}
+
 /* ============================
    Association connections list
    ============================ */
@@ -458,6 +661,12 @@ body.sidebar-open {
 .zoom-btn:hover { background: rgba(15,106,91,0.12); color: var(--accent); }
 .zoom-btn:active { background: rgba(15,106,91,0.22); }
 
+.zoom-btn.active {
+  background: rgba(15, 106, 91, 0.18);
+  color: var(--accent-dark);
+  box-shadow: inset 0 0 0 1px rgba(15, 106, 91, 0.22);
+}
+
 .zoom-fit { font-size: 14px; }
 
 .zoom-label {
@@ -467,6 +676,81 @@ body.sidebar-open {
   min-width: 38px;
   text-align: center;
   font-family: 'IBM Plex Mono', monospace;
+}
+
+#context-menu {
+  position: fixed;
+  min-width: 190px;
+  max-width: min(320px, calc(100vw - 18px));
+  background: rgba(255, 253, 248, 0.97);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 14px 34px rgba(31, 31, 31, 0.2);
+  backdrop-filter: blur(12px);
+  z-index: 250;
+}
+
+#context-menu.hidden {
+  display: none;
+}
+
+.context-menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.context-menu-item:hover {
+  background: rgba(15, 106, 91, 0.14);
+  color: var(--accent-dark);
+}
+
+.context-menu-item.active {
+  background: rgba(15, 106, 91, 0.16);
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.context-menu-item.danger {
+  color: #9a3e34;
+}
+
+.context-menu-item.danger:hover {
+  background: rgba(154, 62, 52, 0.14);
+  color: #7d2e26;
+}
+
+.context-menu-item.disabled,
+.context-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.context-menu-item.disabled:hover,
+.context-menu-item:disabled:hover {
+  background: transparent;
+  color: var(--text);
+}
+
+.context-menu-item.danger.disabled:hover,
+.context-menu-item.danger:disabled:hover {
+  color: #9a3e34;
+}
+
+.context-menu-touch-only {
+  display: none;
 }
 
 #sql-import-input {
@@ -542,6 +826,44 @@ body.sidebar-open {
   box-shadow: 0 4px 14px rgba(0,0,0,0.3);
 }
 
+@media (max-width: 1240px) {
+  #sidebar {
+    width: 215px;
+    min-width: 215px;
+  }
+
+  .btn {
+    font-size: 11.5px;
+    padding: 8px 11px;
+  }
+}
+
+@media (max-height: 740px) {
+  #app {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  #sidebar {
+    padding-top: 12px;
+  }
+
+  .sidebar-section {
+    margin-bottom: 12px;
+  }
+
+  .btn {
+    min-height: 36px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  #tool-hint-box {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+}
+
 @media (max-width: 980px) {
   body,
   html {
@@ -550,7 +872,7 @@ body.sidebar-open {
 
   #app {
     height: auto;
-    min-height: 100vh;
+    min-height: 100dvh;
     padding: 10px;
     gap: 10px;
   }
@@ -598,7 +920,7 @@ body.sidebar-open {
     top: 10px;
     left: 10px;
     bottom: 10px;
-    width: min(340px, calc(100vw - 20px));
+    width: min(360px, calc(100vw - 20px));
     min-width: 0;
     max-width: calc(100vw - 20px);
     z-index: 40;
@@ -639,13 +961,15 @@ body.sidebar-open {
   }
 
   #canvas-container {
-    min-height: calc(100vh - 20px);
+    min-height: calc(100dvh - 20px);
     border-radius: 16px;
   }
 
   #zoom-controls {
     bottom: 12px;
     right: 12px;
+    max-width: calc(100vw - 24px);
+    padding: 4px 6px;
   }
 
   .btn {
@@ -659,6 +983,7 @@ body.sidebar-open {
 
   .modal {
     align-items: flex-end;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .modal-box,
@@ -666,15 +991,26 @@ body.sidebar-open {
   .modal-box.large {
     width: 100%;
     max-width: none;
-    max-height: min(82vh, 760px);
+    max-height: min(86dvh, 760px);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     padding: 20px 16px 16px;
+    overscroll-behavior: contain;
+  }
+
+  #modal-note .modal-box.small {
+    width: 100%;
   }
 
   .modal-footer {
     flex-wrap: wrap;
     justify-content: stretch;
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(to top, var(--panel), rgba(255, 253, 248, 0.92));
+    margin-inline: -16px;
+    padding-inline: 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 
   .modal-footer .btn {
@@ -691,6 +1027,10 @@ body.sidebar-open {
   .attr-row .attr-type {
     width: 100%;
     flex: 1 1 100%;
+  }
+
+  .assoc-attr-row .attr-type {
+    width: 100%;
   }
 
   .attr-row .pk-label {
@@ -710,7 +1050,7 @@ body.sidebar-open {
 
   #sql-output,
   #sql-import-input {
-    height: 240px;
+    height: min(38dvh, 260px);
   }
 
   #toast {
@@ -718,6 +1058,10 @@ body.sidebar-open {
     right: 12px;
     bottom: 12px;
     text-align: center;
+  }
+
+  .context-menu-touch-only {
+    display: flex;
   }
 }
 
@@ -735,7 +1079,8 @@ body.sidebar-open {
   }
 
   #canvas-container {
-    min-height: calc(100vh - 16px);
+    min-height: calc(100dvh - 16px);
+    border-radius: 14px;
   }
 
   #zoom-controls {
@@ -754,10 +1099,153 @@ body.sidebar-open {
   .modal-box,
   .modal-box.small,
   .modal-box.large {
-    max-height: 86vh;
+    max-height: 88dvh;
+    padding: 16px 12px 12px;
   }
 
   .modal-footer .btn {
     flex: 1 1 100%;
+  }
+
+  #context-menu {
+    min-width: 170px;
+    max-width: calc(100vw - 12px);
+    border-radius: 10px;
+    padding: 5px;
+  }
+
+  .context-menu-item {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  #note-text-input,
+  #sql-import-input,
+  #sql-output {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 430px) {
+  #app {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  #mobile-sidebar-toggle {
+    top: 8px;
+    left: 8px;
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 0.84rem;
+  }
+
+  #sidebar {
+    top: 6px;
+    left: 6px;
+    bottom: 6px;
+    width: calc(100vw - 12px);
+    max-width: calc(100vw - 12px);
+    border-radius: 14px;
+  }
+
+  #canvas-container {
+    min-height: calc(100dvh - 12px);
+    border-radius: 12px;
+  }
+
+  #zoom-controls {
+    bottom: 8px;
+    padding: 4px 6px;
+  }
+
+  .zoom-label {
+    min-width: 34px;
+    font-size: 10px;
+  }
+
+  .btn {
+    min-height: 40px;
+    font-size: 12px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  #tool-hint-box {
+    font-size: 10px;
+    padding: 8px;
+  }
+
+  .modal-box,
+  .modal-box.small,
+  .modal-box.large {
+    max-height: 90dvh;
+    padding: 14px 10px 10px;
+  }
+
+  .modal-footer {
+    margin-inline: -10px;
+    padding-inline: 10px;
+    padding-top: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .section-title {
+    font-size: 9px;
+  }
+
+  .btn {
+    font-size: 11px;
+  }
+
+  .zoom-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  #app {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  #mobile-sidebar-toggle {
+    top: 6px;
+    left: 6px;
+    min-height: 34px;
+  }
+
+  #sidebar {
+    top: 6px;
+    bottom: 6px;
+    padding-top: 8px;
+  }
+
+  .sidebar-section {
+    margin-bottom: 10px;
+  }
+
+  .btn {
+    min-height: 34px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  #canvas-container {
+    min-height: calc(100dvh - 12px);
+  }
+
+  #zoom-controls {
+    bottom: 6px;
+    right: 6px;
+  }
+
+  .modal-box,
+  .modal-box.small,
+  .modal-box.large {
+    max-height: 94dvh;
   }
 }

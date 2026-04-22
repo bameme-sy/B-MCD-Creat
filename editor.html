@@ -20,24 +20,37 @@
     <aside id="sidebar">
       <div class="sidebar-head">
         <div class="sidebar-title"><a href="index.html">MCD Creator</a></div>
+        <button id="btn-lang-toggle" type="button" aria-label="Switch language">EN</button>
         <button id="sidebar-close" type="button" aria-label="Fermer les outils">✕</button>
       </div>
 
       <div class="sidebar-section">
-        <div class="section-title">Elements</div>
+        <div id="section-elements" class="section-title">Elements</div>
         <button id="btn-add-entity" class="btn btn-primary">+ Entite</button>
         <button id="btn-add-association" class="btn btn-primary">◇ Association</button>
+        <button id="btn-add-note" class="btn btn-note">📝 Note</button>
+        <button id="btn-add-group" class="btn btn-group-elem">▭ Groupe / Cadre</button>
+        <button id="btn-add-inheritance" class="btn btn-inherit">△ Héritage IS-A</button>
+        <button id="btn-add-constraint" class="btn btn-constraint">⚠︎ Contrainte</button>
+        <button id="btn-add-label" class="btn btn-label">🏷 Repère</button>
       </div>
 
       <div class="sidebar-section">
-        <div class="section-title">Outils</div>
+        <div id="section-tools" class="section-title">Outils</div>
         <button class="btn tool-btn active" data-tool="select">↖ Selection</button>
         <button class="btn tool-btn" data-tool="connect">⇒ Connecter</button>
         <button class="btn tool-btn btn-danger" data-tool="delete">✕ Supprimer</button>
       </div>
 
       <div class="sidebar-section">
-        <div class="section-title">Export</div>
+        <div id="section-productivity" class="section-title">Productivite</div>
+        <button id="btn-duplicate-selected" class="btn">⎘ Dupliquer la selection</button>
+        <button id="btn-center-selected" class="btn">◎ Centrer sur la selection</button>
+        <button id="btn-toggle-snap" class="btn btn-toggle">▦ Grille magnetique : OFF</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div id="section-export" class="section-title">Export</div>
         <button id="btn-export-svg" class="btn">⬇ Exporter SVG</button>
         <button id="btn-export-png" class="btn">⬇ Exporter PNG</button>
         <button id="btn-export-sql" class="btn">⬇ Exporter SQL</button>
@@ -45,7 +58,7 @@
       </div>
 
       <div class="sidebar-section">
-        <div class="section-title">Projet</div>
+        <div id="section-project" class="section-title">Projet</div>
         <button id="btn-save-json" class="btn">💾 Sauvegarder</button>
         <button id="btn-load-json" class="btn">📂 Charger</button>
         <input type="file" id="file-input" accept=".json" style="display:none">
@@ -63,6 +76,10 @@
           <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
             <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#dde3f0" stroke-width="0.5"/>
           </pattern>
+          <marker id="arrow-inherit" markerWidth="10" markerHeight="8"
+            refX="9" refY="4" orient="auto">
+            <polygon points="0 0, 10 4, 0 8" fill="#ffffff" stroke="#8e44ad" stroke-width="1.2"/>
+          </marker>
           <style>
             .entity-header    { fill: #4962d0; }
             .entity-body      { fill: #ffffff; stroke: #4962d0; stroke-width: 2; }
@@ -91,12 +108,48 @@
             .assoc-group.selected .assoc-diamond  { fill: #e67e22; }
             .entity-group.highlight .entity-header { fill: #8e44ad; }
             .assoc-group.highlight .assoc-diamond  { fill: #8e44ad; }
+            .note-body    { fill: #fffde7; stroke: #f9a825; stroke-width: 1.5; }
+            .note-fold    { fill: #f9a825; opacity: 0.6; }
+            .note-text    { fill: #5d4037; font-size: 12px;
+                            font-family: -apple-system, Arial, sans-serif;
+                            dominant-baseline: hanging; pointer-events: none; }
+            .note-group.selected .note-body { stroke: #f39c12; stroke-width: 2.5; }
+            .group-frame  { fill: rgba(73,98,208,0.06); stroke: #4962d0;
+                            stroke-width: 1.5; stroke-dasharray: 6 3; }
+            .group-label  { fill: #4962d0; font-size: 12px; font-weight: bold;
+                            font-family: -apple-system, Arial, sans-serif;
+                            dominant-baseline: hanging; pointer-events: none; }
+            .group-elem.selected .group-frame { stroke: #f39c12; stroke-dasharray: 6 3; }
+            .inherit-line { stroke: #8e44ad; stroke-width: 2; marker-end: url(#arrow-inherit); }
+            .inherit-triangle { fill: #ffffff; stroke: #8e44ad; stroke-width: 2; }
+            .inherit-label    { fill: #8e44ad; font-size: 10px; font-weight: bold;
+                                font-family: -apple-system, Arial, sans-serif;
+                                text-anchor: middle; pointer-events: none; }
+            .constraint-body  { fill: #fff8f2; stroke: #e67e22; stroke-width: 1.6; }
+            .constraint-code  { fill: #e67e22; font-size: 11px; font-weight: bold;
+                                font-family: 'IBM Plex Mono', monospace;
+                                dominant-baseline: central; pointer-events: none; }
+            .constraint-text  { fill: #7a4b28; font-size: 11px;
+                                font-family: -apple-system, Arial, sans-serif;
+                                dominant-baseline: central; pointer-events: none; }
+            .constraint-group.selected .constraint-body { stroke: #f39c12; stroke-width: 2.5; }
+            .label-pill       { fill: #eef2ff; stroke: #6c7ae0; stroke-width: 1.3; }
+            .label-text       { fill: #3344aa; font-size: 11px; font-weight: 600;
+                                font-family: -apple-system, Arial, sans-serif;
+                                text-anchor: middle; dominant-baseline: central;
+                                pointer-events: none; }
+            .label-group.selected .label-pill { stroke: #f39c12; stroke-width: 2.3; }
           </style>
         </defs>
         <rect id="canvas-bg" width="100%" height="100%" fill="url(#grid)"/>
         <g id="viewport">
+          <g id="groups-layer"></g>
+          <g id="constraints-layer"></g>
           <g id="connections-layer"></g>
+          <g id="inheritances-layer"></g>
           <g id="elements-layer"></g>
+          <g id="notes-layer"></g>
+          <g id="labels-layer"></g>
         </g>
       </svg>
 
@@ -105,6 +158,13 @@
         <span   id="zoom-label"  class="zoom-label">100%</span>
         <button id="btn-zoom-out" class="zoom-btn" title="Zoom -">−</button>
         <button id="btn-zoom-fit" class="zoom-btn zoom-fit" title="Adapter au contenu">⛶</button>
+      </div>
+
+      <div id="context-menu" class="context-menu hidden" role="menu" aria-hidden="true">
+        <button type="button" id="btn-touch-move" class="context-menu-item context-menu-touch-only" role="menuitemcheckbox" aria-checked="false">✋ Mode déplacement</button>
+        <button type="button" class="context-menu-item" data-action="edit" role="menuitem">✏️ Modifier</button>
+        <button type="button" class="context-menu-item" data-action="duplicate" role="menuitem">⎘ Dupliquer</button>
+        <button type="button" class="context-menu-item danger" data-action="delete" role="menuitem">🗑 Supprimer</button>
       </div>
     </div>
 
@@ -135,6 +195,11 @@
         <div class="form-group">
           <label>Nom de l'association</label>
           <input type="text" id="assoc-name-input" placeholder="Ex : PASSE">
+        </div>
+        <div class="form-group">
+          <label>Champs de l'association</label>
+          <div id="assoc-attributes-list"></div>
+          <button id="btn-add-assoc-attr" class="btn btn-sm" style="margin-top:6px">+ Ajouter un champ</button>
         </div>
         <div id="assoc-connections-list"></div>
         <div class="modal-footer">
@@ -192,6 +257,105 @@
           <button id="btn-import-sql-file" class="btn">📂 Depuis un fichier</button>
           <input type="file" id="sql-file-input" accept=".sql,.txt" style="display:none">
           <button id="btn-import-sql-go" class="btn btn-primary">⬆ Générer le MCD</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Note -->
+    <div id="modal-note" class="modal hidden">
+      <div class="modal-overlay" data-close="modal-note"></div>
+      <div class="modal-box small">
+        <h2>📝 Note</h2>
+        <div class="form-group">
+          <label>Contenu de la note</label>
+          <textarea id="note-text-input" rows="5" placeholder="Ajoutez une annotation..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-note-cancel" class="btn">Annuler</button>
+          <button id="btn-note-save" class="btn btn-primary">Sauvegarder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Groupe -->
+    <div id="modal-group" class="modal hidden">
+      <div class="modal-overlay" data-close="modal-group"></div>
+      <div class="modal-box small">
+        <h2>▭ Groupe / Cadre</h2>
+        <div class="form-group">
+          <label>Nom du groupe</label>
+          <input type="text" id="group-name-input" placeholder="Ex : Module Commande">
+        </div>
+        <div class="form-group">
+          <label>Couleur</label>
+          <div id="group-color-picker" class="color-picker-row"></div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-group-cancel" class="btn">Annuler</button>
+          <button id="btn-group-save" class="btn btn-primary">Sauvegarder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Héritage -->
+    <div id="modal-inheritance" class="modal hidden">
+      <div class="modal-overlay" data-close="modal-inheritance"></div>
+      <div class="modal-box small">
+        <h2>△ Héritage IS-A</h2>
+        <div class="form-group">
+          <label>Entité parente</label>
+          <select id="inherit-parent-select"></select>
+        </div>
+        <div class="form-group">
+          <label>Entité enfant (spécialisation)</label>
+          <select id="inherit-child-select"></select>
+        </div>
+        <div class="form-group">
+          <label>Type de couverture</label>
+          <select id="inherit-type-select">
+            <option value="total">Totale (toute entité parente est un enfant)</option>
+            <option value="partielle">Partielle</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-inheritance-cancel" class="btn">Annuler</button>
+          <button id="btn-inheritance-save" class="btn btn-primary">Créer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Contrainte -->
+    <div id="modal-constraint" class="modal hidden">
+      <div class="modal-overlay" data-close="modal-constraint"></div>
+      <div class="modal-box small">
+        <h2>⚠︎ Contrainte métier</h2>
+        <div class="form-group">
+          <label>Code</label>
+          <input type="text" id="constraint-code-input" placeholder="Ex : C1">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="constraint-text-input" placeholder="Ex : Un client doit avoir un email unique">
+        </div>
+        <div class="modal-footer">
+          <button id="btn-constraint-cancel" class="btn">Annuler</button>
+          <button id="btn-constraint-save" class="btn btn-primary">Sauvegarder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Repère -->
+    <div id="modal-label" class="modal hidden">
+      <div class="modal-overlay" data-close="modal-label"></div>
+      <div class="modal-box small">
+        <h2>🏷 Repère</h2>
+        <div class="form-group">
+          <label>Texte</label>
+          <input type="text" id="label-text-input" placeholder="Ex : Zone facturation">
+        </div>
+        <div class="modal-footer">
+          <button id="btn-label-cancel" class="btn">Annuler</button>
+          <button id="btn-label-save" class="btn btn-primary">Sauvegarder</button>
         </div>
       </div>
     </div>
